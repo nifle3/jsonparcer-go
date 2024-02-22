@@ -14,14 +14,14 @@ func DecodeJsonToMap(json io.Reader) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 
 	for {
-		n, err := json.Read(buffer)
+		_, err := json.Read(buffer)
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			return nil, err
 		}
-		bufferString := string(buffer[:n])
+		//bufferString := string(buffer[:n])
 
 	}
 
