@@ -1,33 +1,70 @@
 package jsonparcer_go
 
 import (
-	"io"
+	"fmt"
+	"reflect"
 )
 
-func Decode[K any](json io.Reader, output *K) error {
-
-	return nil
+type fieldInfo struct {
+	kind    reflect.Kind
+	idField int
 }
 
-func DecodeJsonToMap(json io.Reader) (map[string]interface{}, error) {
-	buffer := make([]byte, 1024)
-	result := make(map[string]interface{})
+func Unmarshalling[K any]() (K, error) {
+	var result K
+	valueInfo := reflect.ValueOf(&result)
+	reflectType := reflect.TypeOf(result)
 
-	for {
-		_, err := json.Read(buffer)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		//bufferString := string(buffer[:n])
+	typeInfo := make(map[string]fieldInfo)
 
+	for i := range reflectType.NumField() {
+		jsonName, ok := reflectType.Field(i).Tag.Lookup("json")
+		if !ok {
+			continue
+		}
+
+		typeInfo[jsonName] = fieldInfo{
+			kind:    reflectType.Field(i).Type.Kind(),
+			idField: i,
+		}
+	}
+
+	for key, value := range parseJson() {
+		field, ok := typeInfo[key]
+		if !ok {
+			continue
+		}
+
+		if field.kind != reflect.ValueOf(value).Kind() {
+			return result, fmt.Errorf("type mismatch got %s expected %s",
+				reflect.ValueOf(value).Kind(), field.kind)
+		}
+
+		if !valueInfo.Elem().Field(field.idField).CanSet() {
+			return result, fmt.Errorf("cant set a %s field",
+				key)
+		}
+
+		valueInfo.Elem().Field(field.idField).Set(reflect.ValueOf(value))
 	}
 
 	return result, nil
 }
 
-func Encode[K any](json io.Writer, input *K) error {
-	return nil
+func parseJson() func(func(string, any) bool) {
+	return func(yield func(string, any) bool) {
+		jsonTest := map[string]interface{}{
+			"name":      "qwe",
+			"last_name": "Qwe",
+			"surname":   "QWE",
+			"age":       123,
+			"age2":      23,
+		}
+
+		for key, value := range jsonTest {
+			if !yield(key, value) {
+				return
+			}
+		}
+	}
 }
