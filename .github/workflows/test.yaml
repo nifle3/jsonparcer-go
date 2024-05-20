@@ -26,6 +26,8 @@ jobs:
 
       - name: Setup golang
         uses: actions/setup-go@v4
+        env:
+          GOEXPERIMENT: rangefunc
         with:
           go-version: '1.22'
 
