@@ -1,16 +1,55 @@
 package jsonparcer_go
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 )
+
+type tagName string
+
+const (
+	JsonTag tagName = "json"
+)
+
+type Parser interface {
+	HasError() bool
+	GetError() []error
+	Parse(r io.Reader) func(func(string, any) bool)
+}
+
+type Marshaller[K any] struct {
+	parser Parser
+	tag    tagName
+}
+
+func NewJsonMarsheller[K any]() Marshaller[K] {
+	return Marshaller[K]{
+		parser: nil,
+		tag:    JsonTag,
+	}
+}
+
+func newTestMarsheller[K any]() Marshaller[K] {
+	return Marshaller[K]{
+		parser: testParser{},
+		tag:    JsonTag,
+	}
+}
 
 type fieldInfo struct {
 	kind    reflect.Kind
 	idField int
 }
 
-func Unmarshalling[K any]() (K, error) {
+func (m Marshaller[K]) UnmarshallingByte(readerBytes []byte) (K, error) {
+	r := bytes.NewReader(readerBytes)
+
+	return m.Unmarshalling(r)
+}
+
+func (m Marshaller[K]) Unmarshalling(r io.Reader) (K, error) {
 	var result K
 	valueInfo := reflect.ValueOf(&result)
 	reflectType := reflect.TypeOf(result)
@@ -18,7 +57,7 @@ func Unmarshalling[K any]() (K, error) {
 	typeInfo := make(map[string]fieldInfo)
 
 	for i := range reflectType.NumField() {
-		jsonName, ok := reflectType.Field(i).Tag.Lookup("json")
+		jsonName, ok := reflectType.Field(i).Tag.Lookup(string(m.tag))
 		if !ok {
 			continue
 		}
@@ -29,7 +68,7 @@ func Unmarshalling[K any]() (K, error) {
 		}
 	}
 
-	for key, value := range parseJson() {
+	for key, value := range m.parser.Parse(r) {
 		field, ok := typeInfo[key]
 		if !ok {
 			continue
@@ -51,7 +90,18 @@ func Unmarshalling[K any]() (K, error) {
 	return result, nil
 }
 
-func parseJson() func(func(string, any) bool) {
+type testParser struct {
+}
+
+func (t testParser) HasError() bool {
+	return false
+}
+
+func (t testParser) GetError() []error {
+	return nil
+}
+
+func (t testParser) Parse(r io.Reader) func(func(string, any) bool) {
 	return func(yield func(string, any) bool) {
 		jsonTest := map[string]interface{}{
 			"name":      "qwe",

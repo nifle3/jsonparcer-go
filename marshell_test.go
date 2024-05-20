@@ -2,14 +2,6 @@ package jsonparcer_go
 
 import "testing"
 
-/*
-	"name":      "qwe",
-	"last_name": "Qwe",
-	"surname":   "QWE",
-	"age":       123,
-	"age2":      23,
-*/
-
 type TestStruct struct {
 	Name     string `json:"name"`
 	LastName string `json:"last_name"`
