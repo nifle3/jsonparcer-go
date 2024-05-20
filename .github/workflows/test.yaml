@@ -26,28 +26,18 @@ jobs:
 
       - name: Setup golang
         uses: actions/setup-go@v4
-        env:
-          GOEXPERIMENT: rangefunc
         with:
+          cache-dependency-path: subdir/go.sum
           go-version: '1.22'
 
       - name: Install dependencies
         run: go mod download
 
       - name: Test
-        run: go test ./...
-
-  coverage-test:
-    name: Go test coverage check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.22
+        run: GOEXPERIMENT=rangefunc go test ./...
 
       - name: generate test coverage
-        run: go test ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+        run: GOEXPERIMENT=rangefunc go test ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
 
       - name: check test coverage
         uses: vladopajic/go-test-coverage@v2
@@ -57,3 +47,4 @@ jobs:
           threshold-file: 80
           threshold-package: 80
           threshold-total: 95
+
