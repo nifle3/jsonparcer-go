@@ -19,7 +19,9 @@ func TestDecode(t *testing.T) {
 		Age2:     23,
 	}
 
-	result, err := Unmarshalling[TestStruct]()
+	marshaller := newTestMarsheller[TestStruct]()
+
+	result, err := marshaller.Unmarshalling(nil)
 	if err != nil {
 		t.Error(err)
 	}
